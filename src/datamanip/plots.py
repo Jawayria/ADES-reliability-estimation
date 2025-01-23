@@ -6,7 +6,6 @@ from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 def plot_rel_distribution(all_rels: list[int]):
     """
     Plots the distribution of classes in the dataset.
-
     Args:
     - all_rels: A list of integers representing classes.
     """
@@ -28,7 +27,7 @@ def plot_rel_distribution(all_rels: list[int]):
 
 def generate_matrix(true_values, predicted_values, accuracy, model_name):
   cm = confusion_matrix(true_values, predicted_values)
-  disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=[0, 1])  # Replace with your class labels if needed
+  disp = ConfusionMatrixDisplay(confusion_matrix=cm)  # Replace with your class labels if needed
   disp.plot(cmap=plt.cm.Blues)
 
   plt.title(f'Confusion Matrix for {model_name} - Accuracy: {accuracy:.2f}')

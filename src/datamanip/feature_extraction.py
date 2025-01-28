@@ -1,8 +1,13 @@
+from typing import Any, Union
+
+import pandas as pd
+import networkx as nx
+from tqdm import tqdm
 from topology_parameters import prefix_to_type, type_failure_rates
 from filepath import configs_list_path
 
-def calculate_failure_rates() -> dict[int, float]:
 
+def calculate_failure_rates() -> dict[int, float]:
     # Initialize the dictionary to store the index to type mapping
     index_to_type = {}
 
@@ -36,3 +41,30 @@ def calculate_failure_rates() -> dict[int, float]:
 
     return index_to_failure_rate
 
+
+def extract_features_from_data(merged_df_exploded: pd.DataFrame) -> list[list[list[Union[float, int]]]]:
+    # Create node features for the GNN
+
+    all_node_features: list[list[list[Union[float, int]]]] = []
+    for _, row in tqdm(merged_df_exploded.iterrows()):
+
+        adj_matrix = row['matrix']  # Matrix of the graph
+        timestamp = row['timestamp']  # Timestamp when reliability was measured
+
+        # Get indegree and centrality using NetworksX graph
+        G = nx.from_numpy_array(adj_matrix)
+
+        # Calculate centrality measures
+        degree_centrality: dict[Any, float] = nx.degree_centrality(G)
+        closeness_centrality: dict[Any, float] = nx.closeness_centrality(G)
+        degree = adj_matrix.sum(axis=1)
+        # Calculate failure rates based on given topology parameters
+        failure_rates = calculate_failure_rates()
+        node_features_of_one_graph = []
+        # Assign features to each node
+        for node in G.nodes():
+            node_features_of_one_node = [degree_centrality[node], closeness_centrality[node], degree[node], timestamp,
+                                         failure_rates[node]]
+            node_features_of_one_graph.append(node_features_of_one_node)
+        all_node_features.append(node_features_of_one_graph)
+    return all_node_features

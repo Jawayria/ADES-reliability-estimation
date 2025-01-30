@@ -14,6 +14,8 @@ class GAT(torch.nn.Module):
         self.bn2 = torch.nn.BatchNorm1d(hidden_dim//2)  # BatchNorm for second layer
         self.dropout = torch.nn.Dropout(p=dropout_rate)
         self.fc = torch.nn.Linear(hidden_dim//2, output_dim)  # Fully connected layer
+        self.dropout2 = torch.nn.Dropout(p=dropout_rate)
+
 
     def forward(self, data):
         # Extract data components
@@ -23,12 +25,13 @@ class GAT(torch.nn.Module):
         x = self.conv1(x, edge_index)
         x = self.bn1(x) 
         x = F.relu(x)
+        x = self.dropout(x)
 
         # Second GCN layer
         x = self.conv2(x, edge_index)
         x = self.bn2(x) 
         x = F.relu(x)
-        x = self.dropout(x)
+        x = self.dropout2(x)
 
         # Global mean pooling to aggregate node-level features into graph-level features
         x = global_mean_pool(x, batch)

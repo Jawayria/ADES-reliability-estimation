@@ -1,4 +1,8 @@
 venv/*
-.ipynb_checkpoints/*
+*/.ipynb_checkpoints/*
 
-.DS_Store
+*/.DS_Store
+.idea/*
+*/*.egg-info/*
+*.pyc
+src/__pycache__/*

@@ -16,7 +16,7 @@ class ThreeFiveDataset(InMemoryDataset):
     def __init__(self, root, match: str, transform=None, pre_transform=None, pre_filter=None):
         super().__init__(root, transform, pre_transform, pre_filter)
         #Find file in processed_file_names that contains the 'match' string
-        for i, file_name in enumerate(self.processed_file_names):
+        for i, file_name in enumerate(self.processed_paths):
             if match in file_name:
                 self.load(file_name)
 

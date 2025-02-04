@@ -34,8 +34,9 @@ def trim_df_by_range(df: pd.DataFrame, bottom_range: float, top_range: float) ->
     return df.loc[(df['reliability'] >= bottom_range) & (df['reliability'] < top_range)]
 
 
-def construct_node_features(df: pd.DataFrame, num_features: int = 5) -> torch.Tensor:
+def construct_node_features(df: pd.DataFrame) -> torch.Tensor:
     node_features_tensor = torch.tensor(extract_features_from_data(df), dtype=torch.float)
+    print(node_features_tensor.shape)
     return node_features_tensor
 
 

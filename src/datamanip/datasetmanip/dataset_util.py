@@ -1,5 +1,6 @@
 from sklearn.model_selection import train_test_split
-from torch_geometric.data import DataLoader, Data
+from torch_geometric.data import Data
+from torch_geometric.loader import DataLoader
 
 
 def split_dataset(data_list: list[Data], test_size=0.2, val_size=0.25, random_state=42) -> tuple[

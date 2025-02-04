@@ -29,9 +29,9 @@ class ThreeFiveDataset(InMemoryDataset):
     @property
     def processed_file_names(self):
         return ['1-1_model_data.pt', '2-1_model_data.pt', '2-2_model_data.pt',
-                '3-1_model_data.pt', '3-2_model_data.pt', '3-3_model_data.pt', '3-4_model_data.pt',
-                'alt1-1_model_data.pt', 'alt2-1_model_data.pt', 'alt2-2_model_data.pt',
-                'alt3-1_model_data.pt', 'alt3-2_model_data.pt', 'alt3-3_model_data.pt', 'alt3-4_model_data.pt']
+                '3-1_model_data.pt', '3-2_model_data.pt', '3-3_model_data.pt', '3-4_model_data.pt']
+                #'alt1-1_model_data.pt', 'alt2-1_model_data.pt', 'alt2-2_model_data.pt',
+                #'alt3-1_model_data.pt', 'alt3-2_model_data.pt', 'alt3-3_model_data.pt', 'alt3-4_model_data.pt']
 
     def download(self):
         # Download to `self.raw_dir`.

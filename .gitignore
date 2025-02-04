@@ -6,3 +6,5 @@ venv/*
 */*.egg-info/*
 *.pyc
 src/__pycache__/*
+
+data/3-switches-5-slaves/processed/1-1_model_data.pt

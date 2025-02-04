@@ -125,3 +125,4 @@ websocket-client
 widgetsnbextension
 yarl
 imbalanced-learn
+torchmetrics

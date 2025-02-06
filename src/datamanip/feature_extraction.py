@@ -135,8 +135,8 @@ def extract_features_from_data(merged_df_exploded: pd.DataFrame) -> list[list[li
                 i_count,
                 failure_rates.get(node, 0.0),
                 betweenness_centrality[node],
-                eigenvector_centrality[node],
-                pagerank[node],
+                #eigenvector_centrality[node],
+                #pagerank[node],
                 k_core[node],
                 mean_failure_rate_neighbors[node]
             ]

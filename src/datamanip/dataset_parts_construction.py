@@ -79,10 +79,9 @@ def construct_binary_classes(df: pd.DataFrame, threshold : float) -> torch.Tenso
     return all_rels_tensor_binary
 
 
-@deprecated
-def construct_multiclass_classes(merged_df_exploded: pd.DataFrame) -> torch.Tensor:
+def construct_ensemble_classes(df: pd.DataFrame) -> torch.Tensor:
     # Find the biggest reliability value that is less than 1
-    max_reliability = merged_df_exploded.loc[merged_df_exploded['reliability'] < 1, 'reliability'].max()
+    max_reliability = df.loc[df['reliability'] < 1, 'reliability'].max()
 
     # Take the part after the decimal point
     max_value_decimal = Decimal(str(max_reliability))  # Ensure precise representation
@@ -116,7 +115,7 @@ def construct_multiclass_classes(merged_df_exploded: pd.DataFrame) -> torch.Tens
     # Do the actual binning
     all_rels: list[int] = []
 
-    for _, row in merged_df_exploded.iterrows():
+    for _, row in df.iterrows():
         reliability = row['reliability']
         bin_index = classify_into_bins(reliability, bins)
         all_rels.append(bin_index)
@@ -128,4 +127,4 @@ def construct_reliability_classes(merged_df_exploded: pd.DataFrame, threshold : 
     if binary:
         return construct_binary_classes(merged_df_exploded, threshold)
     else:
-        raise NotImplementedError("Multiclass classification is not implemented for ladder datasets yet")
+        return construct_ensemble_classes(merged_df_exploded)

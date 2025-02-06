@@ -5,6 +5,8 @@ THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Now join paths relative to that directory:
 model_checkpoints_path = os.path.join(THIS_DIR, "..", "models")
+hyperparameters_path = os.path.join(model_checkpoints_path, "booster", "best_model_params")
+best_models_path = os.path.join(model_checkpoints_path, "booster", "best_models")
 
 dataset_path = os.path.join(THIS_DIR, "..", "data", "3-switches-5-slaves")
 

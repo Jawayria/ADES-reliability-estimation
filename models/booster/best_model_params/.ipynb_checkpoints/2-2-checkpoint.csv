@@ -1,0 +1,2 @@
+Match,Number of epochs,Learning rate,Node features,Dropout rate,Patience,Hidden dimension,Precision,Recall,F1 Score,Accuracy,AUROC
+102-2,150,0.0005,10,0.3,15,28,0.9421157836914062,0.8321579694747925,0.8837296366691589,0.9160243272781372,0.9001764059066772

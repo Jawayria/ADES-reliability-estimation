@@ -4,7 +4,7 @@ import re
 import pandas as pd
 import torch
 
-from filepath import hyperparameters_path, best_models_path
+from filepath import hyperparameters_path, best_models_path, model_checkpoints_path
 from models.GAT import GAT
 
 
@@ -25,7 +25,7 @@ def load_best_model_based_on_match(match : str) -> GAT:
 
     # Initialize the GAT model with extracted parameters
     model = GAT(input_dim=NODE_FEATURES, hidden_dim=HIDDEN_DIM, output_dim=2, dropout_rate=DROPOUT_RATE)
-    model.load_state_dict(torch.load(os.path.join(best_models_path, f"{match}.pth")))
+    model.load_state_dict(torch.load(os.path.join(best_models_path, f"{match}.pth"), weights_only=True))
     return model
 
 

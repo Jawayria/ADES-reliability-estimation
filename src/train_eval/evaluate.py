@@ -44,6 +44,10 @@ def evaluate_ensamble(device, ensemble: dict[str, GAT], test_loader: DataLoader)
     np.ndarray, np.ndarray, int, float]:
     predictions = []
     true_classes = []
+    
+    for match, model in ensemble.items():
+        model.eval()  
+    
     with torch.no_grad():
         for data in test_loader:
             data = data.to(device)
@@ -92,7 +96,7 @@ def evaluate_ensamble(device, ensemble: dict[str, GAT], test_loader: DataLoader)
                         predictions.append(6)
                     else:
                         predictions.append(7)
-
     sq_distance = np.sum((np.array(true_classes) - np.array(predictions)) ** 2)
+    rmse = np.sqrt(sq_distance / len(true_classes))
     accuracy = np.sum(np.array(true_classes) == np.array(predictions)) / len(true_classes)
-    return np.array(true_classes), np.array(predictions), sq_distance, accuracy
+    return np.array(true_classes), np.array(predictions), sq_distance, accuracy, rmse

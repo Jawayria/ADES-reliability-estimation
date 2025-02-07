@@ -1,0 +1,2 @@
+Match,Number of epochs,Learning rate,Node features,Dropout rate,Patience,Hidden dimension
+3-4,200,0.0005,12,0.3,20,32

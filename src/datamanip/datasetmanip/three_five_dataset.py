@@ -65,8 +65,8 @@ class ThreeFiveDataset(InMemoryDataset):
 
         # Explode the 'timestamp' and 'reliability' columns
         merged_df_exploded = merged_df.explode(['timestamp', 'reliability']).reset_index(drop=True)
-        # Remove all rows where timestamp is above 10000
-        filtered_df = merged_df_exploded[merged_df_exploded['timestamp'] <= 10000]
+        # Remove all rows where timestamp is above 8500
+        filtered_df = merged_df_exploded[merged_df_exploded['timestamp'] <= 8500]
         sets = split_dataset(filtered_df)
         print("Finished splitting dataset")
         for i, rel_range in enumerate(RANGES):

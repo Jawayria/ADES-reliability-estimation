@@ -1,5 +1,6 @@
 import os
 import re
+import time
 
 import numpy as np
 import pandas as pd
@@ -124,12 +125,13 @@ def calc_inference_times():
     matrices_df['timestamp'] = 1000
     y_list = {10: 0.961912, 451: 0.999913, 695:0.999982}
     for cng in desired_configs:
+        start_time = time.time()
         df = matrices_df[matrices_df['config_id'] == cng]
         node_features = torch.Tensor(extract_features_from_data(df))
         edge_indices = construct_edge_indices(df)
         data = Data(x=node_features[0], edge_index=edge_indices[0], y=y_list[cng])
-        print(f"Data for config {cng}:")
-        print(data)
+        end_time = time.time()
+        print(f"Inference time for config {cng}: {end_time - start_time:.5f} seconds")
 
 
 

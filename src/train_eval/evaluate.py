@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 from torch_geometric.loader import DataLoader
+from torchmetrics.functional import f1_score
 
 from models.GAT import GAT
 
@@ -50,7 +51,7 @@ def evaluate_multiclass(device, model, test_loader, best_model_name):
 
 
 def evaluate_ensamble(device, ensemble: dict[str, GAT], test_loader: DataLoader) -> tuple[
-    np.ndarray, np.ndarray, int, float, float, float, float]:
+    np.ndarray, np.ndarray, int, float, float, float, float, float]:
     predictions = []
     true_classes = []
 
@@ -110,5 +111,6 @@ def evaluate_ensamble(device, ensemble: dict[str, GAT], test_loader: DataLoader)
     accuracy = np.sum(np.array(true_classes) == np.array(predictions)) / len(true_classes)
     percentage_outside_rad_1 = np.sum(np.abs(np.array(true_classes) - np.array(predictions)) > 1) / len(true_classes)
     percentage_outside_rad_2 = np.sum(np.abs(np.array(true_classes) - np.array(predictions)) > 2) / len(true_classes)
+    f1 = f1_score(torch.tensor(true_classes), torch.tensor(predictions), num_classes=8)
     return np.array(true_classes), np.array(
-        predictions), sq_distance, accuracy, rmse, percentage_outside_rad_1, percentage_outside_rad_2
+        predictions), sq_distance, accuracy, rmse, percentage_outside_rad_1, percentage_outside_rad_2, f1

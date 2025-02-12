@@ -93,3 +93,31 @@ def generate_metrics(true_values, predicted_values, match, model_checkpoints_pat
         writer.writerow(data)
 
     print(f"Metrics saved to {file_path}")
+
+def visualize_samples_outside_of_radii(accuracy, outside_1, outside_2):
+    # Define categories and corresponding percentages
+    categories = ['Withing Radius 1', 'Within Radius 2', 'Outside Radius 2']
+    percentages = [(1-accuracy)*100, outside_1*100, outside_2*100]
+
+    # Create a bar chart
+    plt.figure(figsize=(8, 6))
+    bars = plt.bar(categories, percentages, color=['red', 'blue', 'green'])
+
+    # Add text annotations on top of the bars
+    for bar in bars:
+        height = bar.get_height()
+        plt.text(
+            bar.get_x() + bar.get_width() / 2,  # x-coordinate: center of the bar
+            height,  # y-coordinate: top of the bar
+            f'{height:.1f}%',  # formatted percentage label
+            ha='center', va='bottom'
+        )
+
+    # Labeling the chart
+    plt.xlabel('Sample Categories')
+    plt.ylabel('Percentage (%)')
+    plt.title('Visualization of Sample Percentages')
+    plt.ylim(0, max(percentages) + 10)  # adjust y-axis limit for better visualization
+
+    # Display the chart
+    plt.show()

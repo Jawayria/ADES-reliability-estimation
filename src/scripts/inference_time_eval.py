@@ -1,51 +1,136 @@
-# Import necessary libraries
+import os
+import re
+
 import numpy as np
-from time import perf_counter
-
+import pandas as pd
 import torch
-from torch_geometric.loader import DataLoader
+from torch.ao.ns.fx.weight_utils import extract_weight_from_node
+from torch_geometric.data import Data
+
+from datamanip.dataset_parts_construction import construct_edge_indices
+from datamanip.feature_extraction import extract_features_from_data
+from filepath import dataset_path
 
 
-from datamanip.datasetmanip.three_five_dataset import ThreeFiveDataset
-from filepath import dataset_path, model_checkpoints_path
-from models.GAT import GAT
+def extract_config_id(path: str) -> int:
+    """
+    Extract the configuration id from the file path.
+    For example, for "ctmc_s10.lab", it returns 10.
+    """
+    match = re.search(r's(\d+)', path)
+    if match:
+        return int(match.group(1))
+    else:
+        raise ValueError(f"Could not extract config_id from path: {path}")
 
+def read_matrix_file(path: str) -> list:
+    """
+    Read a single matrix file and return the matrix as a list of lists of ints.
+    Assumes the file contains a string representation of a matrix with square brackets.
+    """
+    with open(path, 'r') as f:
+        content = f.read()
+
+    # Remove the first and last character ('[' and ']')
+    content = content[1:-1]
+    string_list = []
+    current_row = ''
+    start_line = False
+
+    for c in content:
+        if c == '[':
+            start_line = True
+        elif c == ']':
+            start_line = False
+            string_list.append(current_row)
+            current_row = ''
+        elif start_line:
+            if c != '\n':
+                current_row += c
+
+    # Convert the string representation into a list of lists of ints
+    matrix = []
+    for string in string_list:
+        # Replace '.' with a space, split by whitespace, and convert to int
+        vals = string.replace('.', ' ').split()
+        vals = [int(v) for v in vals]
+        matrix.append(vals)
+    return matrix
+
+def read_reliability_file(path: str) -> pd.DataFrame:
+    """
+    Read a single reliability CSV file and return the DataFrame.
+    Assumes the CSV uses semicolon as separator, comma as decimal, and has two columns:
+    timestamp and reliability.
+    """
+    df = pd.read_csv(
+        path,
+        sep=';',
+        decimal=',',
+        names=['timestamp', 'reliability']
+    )
+    # Only keep data up to (and including) 1000 hours.
+    df = df[df['timestamp'] == 1000]
+    return df
+
+def read_matrices_for_configs(matrix_directory: str, configs: list) -> pd.DataFrame:
+    """
+    For each configuration id in `configs`, build the file path for its matrix file,
+    read the matrix, and return a DataFrame with columns 'matrix' and 'config_id'.
+    """
+    all_matrices = []
+    for cfg in configs:
+        path = os.path.join(matrix_directory, f"config_{cfg}.txt")
+        matrix = read_matrix_file(path)
+        matrix = np.array(matrix)
+        all_matrices.append({"matrix": matrix, "config_id": cfg})
+    return pd.DataFrame(all_matrices)
+
+def read_reliability_for_configs(rel_directory: str, configs: list) -> pd.DataFrame:
+    """
+    For each configuration id in `configs`, build the file path for its reliability file,
+    read the reliability data (only up to 1000 hours), and return a DataFrame with columns
+    'rel_data' and 'config_id'.
+    """
+    all_rels = []
+    for cfg in configs:
+        path = os.path.join(rel_directory, f"config_{cfg}.csv")
+        rel_data = read_reliability_file(path)
+        all_rels.append({"rel_data": rel_data, "config_id": cfg})
+    return pd.DataFrame(all_rels)
+
+# --- Main usage ---
 def calc_inference_times():
-    # Convert dataset to PyTorch tensors
-    dataset = ThreeFiveDataset(root=dataset_path, load_binary=True)
-    filtered_data = [data for data in dataset if data.x[0][3] == 1000]
-    print(f"Number of samples: {len(filtered_data)}")
-    dataloader = DataLoader(filtered_data, batch_size=1, shuffle=False)
-    NODE_FEATURES = 5
-    DROPOUT_RATE = 0.3
-    model =  GAT(input_dim=NODE_FEATURES, hidden_dim=64, output_dim=2, dropout_rate=DROPOUT_RATE)
-    model.load_state_dict(torch.load(model_checkpoints_path + "best_model_GAT.pth", weights_only=True))
-    # Measure inference times
-    inference_times = []
-    total_time = 0
+    # List of configuration IDs to read
+    desired_configs = [10, 451, 695]
 
-    with torch.no_grad():
-        for i, data in enumerate(dataloader):
-            start_time = perf_counter()
-            _ = model(data)
-            end_time = perf_counter()
-            inference_time = end_time - start_time
-            inference_times.append(inference_time)
-            total_time += inference_time
+    # Directories where your files are stored.
+    # Adjust these to your actual directories.
 
-    # Sort by inference time
-    sorted_times = sorted(inference_times)
+    # Read only the desired matrix and reliability files.
+    matrices_path = os.path.join(dataset_path, "raw", "01_system", "matrix")
+    reliabilities_path = os.path.join(dataset_path, "raw", "03_reliability", "hours")
+    matrices_df = read_matrices_for_configs(matrices_path, desired_configs)
+    reliability_df = read_reliability_for_configs(reliabilities_path, desired_configs)
+    # Display the results.
 
-    # Extract results
-    best_time = sorted_times[0]
-    worst_time = sorted_times[-1]
-    average_time = np.mean(sorted_times)
+    print("Matrices for configs 10, 451, and 695:")
+    print(matrices_df)
 
-    # Print results
-    print("Best Inference Time:", best_time)
-    print("Worst Inference Time:", worst_time)
-    print("Average Inference Time:", average_time)
-    print("Total Inference Time:", total_time)
+    print("\nReliability values (up to 1000 hours) for configs 10, 451, and 695:")
+    for idx, row in reliability_df.iterrows():
+        print(f"\nConfig ID: {row['config_id']}")
+        print(row['rel_data'])
+    matrices_df['timestamp'] = 1000
+    y_list = {10: 0.961912, 451: 0.999913, 695:0.999982}
+    for cng in desired_configs:
+        df = matrices_df[matrices_df['config_id'] == cng]
+        node_features = torch.Tensor(extract_features_from_data(df))
+        edge_indices = construct_edge_indices(df)
+        data = Data(x=node_features[0], edge_index=edge_indices[0], y=y_list[cng])
+        print(f"Data for config {cng}:")
+        print(data)
+
 
 
 if __name__ == "__main__":

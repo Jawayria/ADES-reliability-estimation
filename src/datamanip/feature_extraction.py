@@ -18,12 +18,11 @@ def calculate_failure_rates(config_id) -> dict[int, float]:
         for line in file:
             if line.startswith(search_string):
                 selected_line = line.strip()
-                break 
+                break
             else:
-                selected_line = None  
+                selected_line = None
 
-
-    # Extract the part after 'config_0: [' and before the closing ']'
+                # Extract the part after 'config_0: [' and before the closing ']'
     start = selected_line.find('[')
     end = selected_line.find(']')
     node_list_str = selected_line[start + 1:end]
@@ -51,19 +50,18 @@ def calculate_failure_rates(config_id) -> dict[int, float]:
 
 
 def calculate_type_count(config_id) -> dict[str, int]:
-    
     search_string = f"config_{config_id}"
-    type_count = {'slave':0, 'switch':0, 'link':0, 'i':0}
+    type_count = {'slave': 0, 'switch': 0, 'link': 0, 'i': 0}
     # Read the first line from 'configs.txt'
     with open(configs_list_path, 'r') as file:
         for line in file:
             if line.startswith(search_string):
                 selected_line = line.strip()
-                break 
+                break
             else:
-                selected_line = None  
+                selected_line = None
 
-    # Extract the part after 'config_0: [' and before the closing ']'
+                # Extract the part after 'config_0: [' and before the closing ']'
     start = selected_line.find('[')
     end = selected_line.find(']')
     node_list_str = selected_line[start + 1:end]
@@ -79,7 +77,7 @@ def calculate_type_count(config_id) -> dict[str, int]:
             # Use the first character as prefix
             prefix = node_name[0]
             node_type = prefix_to_type.get(prefix, 'unknown')
-            
+
         type_count[node_type] = type_count[node_type] + 1
 
     return type_count
@@ -87,28 +85,28 @@ def calculate_type_count(config_id) -> dict[str, int]:
 
 def extract_features_from_data(merged_df_exploded: pd.DataFrame) -> list[list[list[Union[float, int]]]]:
     all_node_features: list[list[list[Union[float, int]]]] = []
-    
+
     for _, row in tqdm(merged_df_exploded.iterrows()):
-        adj_matrix = row['matrix']  
+        adj_matrix = row['matrix']
         timestamp = row['timestamp']
 
         G = nx.from_numpy_array(adj_matrix)
 
         # Centrality measures (handle NaN cases)
         degree_centrality = nx.degree_centrality(G)
-        closeness_centrality = {node: val if not np.isnan(val) else 0.0 for node, val in nx.closeness_centrality(G).items()}
+        closeness_centrality = {node: val if not np.isnan(val) else 0.0 for node, val in
+                                nx.closeness_centrality(G).items()}
         betweenness_centrality = nx.betweenness_centrality(G)
-        
+
         try:
             eigenvector_centrality = nx.eigenvector_centrality(G, max_iter=1000, tol=1e-6)
         except nx.PowerIterationFailedConvergence:
             eigenvector_centrality = {node: 0.0 for node in G.nodes}
-        
+
         pagerank = nx.pagerank(G, alpha=0.85)
         k_core = nx.core_number(G)
         degree = adj_matrix.sum(axis=1)
 
-        
         failure_rates = calculate_failure_rates(row['config_id'])
         type_count = calculate_type_count(row['config_id'])
         switch_count = type_count['switch']
@@ -135,13 +133,57 @@ def extract_features_from_data(merged_df_exploded: pd.DataFrame) -> list[list[li
                 i_count,
                 failure_rates.get(node, 0.0),
                 betweenness_centrality[node],
-                #eigenvector_centrality[node],
-                #pagerank[node],
+                # eigenvector_centrality[node],
+                # pagerank[node],
                 k_core[node],
                 mean_failure_rate_neighbors[node]
             ]
             node_features_of_one_graph.append(node_features_of_one_node)
-        
+
         all_node_features.append(node_features_of_one_graph)
 
     return all_node_features
+
+
+def extract_features_for_one_data_point(adj_matrix: np.ndarray, timestamp: int, config_id : int) -> list[list[Union[float, int]]]:
+    G = nx.from_numpy_array(adj_matrix)
+
+    # Centrality measures (handle NaN cases)
+    degree_centrality = nx.degree_centrality(G)
+    closeness_centrality = {node: val if not np.isnan(val) else 0.0 for node, val in nx.closeness_centrality(G).items()}
+    betweenness_centrality = nx.betweenness_centrality(G)
+
+    k_core = nx.core_number(G)
+    degree = adj_matrix.sum(axis=1)
+
+    failure_rates = calculate_failure_rates(config_id)
+    type_count = calculate_type_count(config_id)
+    switch_count = type_count['switch']
+    slave_count = type_count['slave']
+    link_count = type_count['link']
+    i_count = type_count['i']
+
+    mean_failure_rate_neighbors = {
+        node: np.mean([failure_rates.get(n, 0.0) for n in G.neighbors(node)])
+        if len(list(G.neighbors(node))) > 0 else 0.0
+        for node in G.nodes
+    }
+
+    node_features_of_one_graph = []
+    for node in G.nodes():
+        node_features_of_one_node = [
+            degree_centrality[node],
+            closeness_centrality[node],
+            degree[node],
+            timestamp,
+            switch_count,
+            slave_count,
+            link_count,
+            i_count,
+            failure_rates.get(node, 0.0),
+            betweenness_centrality[node],
+            k_core[node],
+            mean_failure_rate_neighbors[node]
+        ]
+        node_features_of_one_graph.append(node_features_of_one_node)
+    return node_features_of_one_graph

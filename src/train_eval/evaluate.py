@@ -114,3 +114,76 @@ def evaluate_ensamble(device, ensemble: dict[str, GAT], test_loader: DataLoader)
     f1 = f1_score(torch.tensor(true_classes), torch.tensor(predictions), num_classes=8)
     return np.array(true_classes), np.array(
         predictions), sq_distance, accuracy, rmse, percentage_outside_rad_1, percentage_outside_rad_2, f1
+
+def evaluate_soft_voting_ensemble(device, ensemble: dict[str, GAT], test_loader: DataLoader) -> tuple[
+    np.ndarray, np.ndarray, int, float, float, float, float, float]:
+    predictions = []
+    true_classes = []
+
+    # Set all models to evaluation mode.
+    for model in ensemble.values():
+        model.eval()
+
+    with torch.no_grad():
+        for data in test_loader:
+            data = data.to(device)
+            true_classes.extend(data.y.cpu().numpy())
+
+            # Get softmax probabilities from all 7 binary classifiers.
+            prob_1_1 = torch.softmax(ensemble["1-1"](data), dim=1)  # [batch_size, 2]
+            prob_2_1 = torch.softmax(ensemble["2-1"](data), dim=1)
+            prob_3_1 = torch.softmax(ensemble["3-1"](data), dim=1)
+            prob_3_2 = torch.softmax(ensemble["3-2"](data), dim=1)
+            prob_2_2 = torch.softmax(ensemble["2-2"](data), dim=1)
+            prob_3_3 = torch.softmax(ensemble["3-3"](data), dim=1)
+            prob_3_4 = torch.softmax(ensemble["3-4"](data), dim=1)
+
+            # Compute aggregated probability for each final class (0 to 7)
+            # Path breakdown:
+            # Classes 0 & 1: branch "1-1" (output 0) then "2-1" (output 0) then "3-1"
+            p_branch1 = prob_1_1[:, 0]
+            p_2_1_0 = prob_2_1[:, 0]
+            # Classes 0 and 1 split in "3-1"
+            prob_class_0 = p_branch1 * p_2_1_0 * prob_3_1[:, 0]
+            prob_class_1 = p_branch1 * p_2_1_0 * prob_3_1[:, 1]
+
+            # Classes 2 & 3: branch "1-1" (output 0) then "2-1" (output 1) then "3-2"
+            p_2_1_1 = prob_2_1[:, 1]
+            prob_class_2 = p_branch1 * p_2_1_1 * prob_3_2[:, 0]
+            prob_class_3 = p_branch1 * p_2_1_1 * prob_3_2[:, 1]
+
+            # Classes 4 & 5: branch "1-1" (output 1) then "2-2" (output 0) then "3-3"
+            p_branch2 = prob_1_1[:, 1]
+            p_2_2_0 = prob_2_2[:, 0]
+            prob_class_4 = p_branch2 * p_2_2_0 * prob_3_3[:, 0]
+            prob_class_5 = p_branch2 * p_2_2_0 * prob_3_3[:, 1]
+
+            # Classes 6 & 7: branch "1-1" (output 1) then "2-2" (output 1) then "3-4"
+            p_2_2_1 = prob_2_2[:, 1]
+            prob_class_6 = p_branch2 * p_2_2_1 * prob_3_4[:, 0]
+            prob_class_7 = p_branch2 * p_2_2_1 * prob_3_4[:, 1]
+
+            # Stack probabilities into a [batch_size, 8] tensor.
+            all_probs = torch.stack(
+                [prob_class_0, prob_class_1, prob_class_2, prob_class_3,
+                 prob_class_4, prob_class_5, prob_class_6, prob_class_7],
+                dim=1
+            )
+
+            # Choose the final class with the highest aggregated probability.
+            preds = torch.argmax(all_probs, dim=1)
+            predictions.extend(preds.cpu().numpy())
+
+    # Compute evaluation metrics.
+    true_arr = np.array(true_classes)
+    pred_arr = np.array(predictions)
+    sq_distance = np.sum((true_arr - pred_arr) ** 2)
+    rmse = np.sqrt(sq_distance / len(true_arr))
+    accuracy = np.sum(true_arr == pred_arr) / len(true_arr)
+    percentage_outside_rad_1 = np.sum(np.abs(true_arr - pred_arr) > 1) / len(true_arr)
+    percentage_outside_rad_2 = np.sum(np.abs(true_arr - pred_arr) > 2) / len(true_arr)
+    f1 = f1_score(torch.tensor(true_classes), torch.tensor(predictions), num_classes=8, task="multiclass")
+
+    return true_arr, pred_arr, sq_distance, accuracy, rmse, percentage_outside_rad_1, percentage_outside_rad_2, f1
+
+

@@ -6,6 +6,7 @@ import torch
 
 from filepath import hyperparameters_path, best_models_path, model_checkpoints_path
 from models.GAT import GAT
+from models.GAT_LN_HEAD import GAT_LN_HEAD
 
 
 def extract_config_id(filename):
@@ -24,7 +25,11 @@ def load_best_model_based_on_match(match : str) -> GAT:
     DROPOUT_RATE = float(first_row["Dropout rate"])
 
     # Initialize the GAT model with extracted parameters
-    model = GAT(input_dim=NODE_FEATURES, hidden_dim=HIDDEN_DIM, output_dim=2, dropout_rate=DROPOUT_RATE)
+    if match == "1-1":
+        print("Using GAT_LN_HEAD for match 1-1")
+        model = GAT_LN_HEAD(input_dim=NODE_FEATURES, hidden_dim=HIDDEN_DIM, output_dim=2, dropout_rate=DROPOUT_RATE)
+    else:
+        model = GAT(input_dim=NODE_FEATURES, hidden_dim=HIDDEN_DIM, output_dim=2, dropout_rate=DROPOUT_RATE)
     model.load_state_dict(torch.load(os.path.join(best_models_path, f"{match}.pth"), weights_only=True))
     return model
 

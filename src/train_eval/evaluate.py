@@ -111,7 +111,7 @@ def evaluate_ensamble(device, ensemble: dict[str, GAT], test_loader: DataLoader)
     accuracy = np.sum(np.array(true_classes) == np.array(predictions)) / len(true_classes)
     percentage_outside_rad_1 = np.sum(np.abs(np.array(true_classes) - np.array(predictions)) > 1) / len(true_classes)
     percentage_outside_rad_2 = np.sum(np.abs(np.array(true_classes) - np.array(predictions)) > 2) / len(true_classes)
-    f1 = f1_score(torch.tensor(true_classes), torch.tensor(predictions), num_classes=8)
+    f1 = f1_score(torch.tensor(true_classes), torch.tensor(predictions), num_classes=8, task="multiclass")
     return np.array(true_classes), np.array(
         predictions), sq_distance, accuracy, rmse, percentage_outside_rad_1, percentage_outside_rad_2, f1
 

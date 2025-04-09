@@ -1,0 +1,3 @@
+config_1001: [S1, L11, S2, L12, S3, L23, S4, L34, S5, L35, S6, L46, Sw1, I121, Sw2, I231, Sw3, I341, Sw4]
+config_1002: [S1, L11, S2, L12, L22, S3, L23, L33, S4, L34, S5, L35, S6, L36, L46, S7, L57, Sw1, I121, Sw2, I231, Sw3, I341, Sw4, I451, Sw5]
+config_1003: config_0: [S1, L11, S2, L22, S3, L33, S4, L44, S5, L55, Sw1, I121, Sw2, I231, Sw3, I341, Sw4, I451, Sw5]

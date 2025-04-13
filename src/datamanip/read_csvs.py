@@ -45,6 +45,39 @@ def read_matrices(filepath: str) -> pd.DataFrame:
     all_matrices_df = pd.DataFrame(all_matrices)
     return all_matrices_df
 
+def read_matrix_file(path: str) -> list:
+    """
+    Read a single matrix file and return the matrix as a list of lists of ints.
+    Assumes the file contains a string representation of a matrix with square brackets.
+    """
+    with open(path, 'r') as f:
+        content = f.read()
+
+    # Remove the first and last character ('[' and ']')
+    content = content[1:-1]
+    string_list = []
+    current_row = ''
+    start_line = False
+
+    for c in content:
+        if c == '[':
+            start_line = True
+        elif c == ']':
+            start_line = False
+            string_list.append(current_row)
+            current_row = ''
+        elif start_line:
+            if c != '\n':
+                current_row += c
+
+    # Convert the string representation into a list of lists of ints
+    matrix = []
+    for string in string_list:
+        # Replace '.' with a space, split by whitespace, and convert to int
+        vals = string.replace('.', ' ').split()
+        vals = [int(v) for v in vals]
+        matrix.append(vals)
+    return matrix
 
 def read_rel_values(filepath: str, path_to_config_all: str) -> pd.DataFrame:
     """

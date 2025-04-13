@@ -1,23 +1,24 @@
 # Import necessary libraries
+import glob
+import os
+
 import numpy as np
+import pandas as pd
 from time import perf_counter
 
 import torch
-from torch_geometric.loader import DataLoader
+from torch_geometric.data import Data
+from tqdm import tqdm
 
-
-from datamanip.datasetmanip.three_five_dataset import ThreeFiveDataset
-from filepath import dataset_path
+from datamanip.dataset_parts_construction import construct_edge_indices
+from datamanip.feature_extraction import extract_features_from_data
+from datamanip.read_csvs import read_matrix_file
+from filepath import matrices_path
 from train_eval.predict import predict_one_ensemble
 from utils import load_best_model_based_on_match
 
 
 def calc_inference_times():
-    # Convert dataset to PyTorch tensors
-    dataset = ThreeFiveDataset(dataset_path, 'ensemble', "test")
-    dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
-    NODE_FEATURES = 12
-    DROPOUT_RATE = 0.3
     # Measure inference times
     inference_times = []
     total_time = 0
@@ -28,8 +29,21 @@ def calc_inference_times():
         ensemble[match] = load_best_model_based_on_match(match)
 
     with torch.no_grad():
-        for data in dataloader:
+        # Check each file in matrices_path and create a Data object for each
+        #Get list of all files in the directory
+        files = sorted(glob.glob(matrices_path))
+        for file in tqdm(files):
+            config_id = os.path.basename(file).split('_')[1].split('.')[0]
+            if (config_id == "1"):
+                continue
+            matrix = read_matrix_file(os.path.join(matrices_path, file))
             start_time = perf_counter()
+            dict = {'matrix': np.array(matrix),
+                    'config_id': config_id, 'timestamp': 1000}
+            df = pd.DataFrame([dict])
+            node_features = torch.Tensor(extract_features_from_data(df))
+            edge_indices = construct_edge_indices(df)
+            data = Data(x=node_features[0], edge_index=edge_indices[0], y=100)
             _ = predict_one_ensemble(ensemble, data)
             end_time = perf_counter()
             inference_time = end_time - start_time

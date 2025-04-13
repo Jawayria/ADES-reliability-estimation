@@ -3,18 +3,23 @@ from typing import Any, Union
 import pandas as pd
 import networkx as nx
 import numpy as np
+import torch
+from numpy import ndarray
+from torch_geometric.data import Data
 from tqdm import tqdm
 from topology_parameters import prefix_to_type, type_failure_rates
-from filepath import configs_list_path
+from filepath import configs_list_path, configs_list_5_7_path
 
 
-def calculate_failure_rates(config_id) -> dict[int, float]:
+# TODO: Come up with a better way to handle the paths for different datasets
+def calculate_failure_rates(config_id, dataset) -> dict[int, float]:
     # Initialize the dictionary to store the index to type mapping
     index_to_type = {}
 
     search_string = f"config_{config_id}"
     # Read the config from 'configs.txt'
-    with open(configs_list_path, 'r') as file:
+    path_to_configs = configs_list_path if dataset == '3-5' else configs_list_5_7_path
+    with open(path_to_configs, 'r') as file:
         for line in file:
             if line.startswith(search_string):
                 selected_line = line.strip()
@@ -49,11 +54,12 @@ def calculate_failure_rates(config_id) -> dict[int, float]:
     return index_to_failure_rate
 
 
-def calculate_type_count(config_id) -> dict[str, int]:
+def calculate_type_count(config_id, dataset) -> dict[str, int]:
     search_string = f"config_{config_id}"
     type_count = {'slave': 0, 'switch': 0, 'link': 0, 'i': 0}
     # Read the first line from 'configs.txt'
-    with open(configs_list_path, 'r') as file:
+    path_to_configs = configs_list_path if dataset == '3-5' else configs_list_5_7_path
+    with open(path_to_configs, 'r') as file:
         for line in file:
             if line.startswith(search_string):
                 selected_line = line.strip()
@@ -83,7 +89,7 @@ def calculate_type_count(config_id) -> dict[str, int]:
     return type_count
 
 
-def extract_features_from_data(merged_df_exploded: pd.DataFrame) -> list[list[list[Union[float, int]]]]:
+def extract_features_from_data(merged_df_exploded: pd.DataFrame, dataset='3-5') -> list[list[list[Union[float, int]]]]:
     all_node_features: list[list[list[Union[float, int]]]] = []
 
     for _, row in tqdm(merged_df_exploded.iterrows()):
@@ -107,8 +113,8 @@ def extract_features_from_data(merged_df_exploded: pd.DataFrame) -> list[list[li
         k_core = nx.core_number(G)
         degree = adj_matrix.sum(axis=1)
 
-        failure_rates = calculate_failure_rates(row['config_id'])
-        type_count = calculate_type_count(row['config_id'])
+        failure_rates = calculate_failure_rates(row['config_id'], dataset)
+        type_count = calculate_type_count(row['config_id'], dataset)
         switch_count = type_count['switch']
         slave_count = type_count['slave']
         link_count = type_count['link']
@@ -145,7 +151,8 @@ def extract_features_from_data(merged_df_exploded: pd.DataFrame) -> list[list[li
     return all_node_features
 
 
-def extract_features_for_one_data_point(adj_matrix: np.ndarray, timestamp: int, config_id : int) -> list[list[Union[float, int]]]:
+def extract_features_for_one_data_point(adj_matrix: np.ndarray, timestamp: int, config_id: int) -> list[
+    list[Union[float, int]]]:
     G = nx.from_numpy_array(adj_matrix)
 
     # Centrality measures (handle NaN cases)
@@ -187,3 +194,25 @@ def extract_features_for_one_data_point(adj_matrix: np.ndarray, timestamp: int, 
         ]
         node_features_of_one_graph.append(node_features_of_one_node)
     return node_features_of_one_graph
+
+
+def get_meta_features_from_ensemble(ensemble: dict[str, Any], data: Data, device='cpu') -> ndarray:
+    """
+    Extracts meta-features from the ensemble of models for a given data point.
+
+    Args:
+        ensemble (dict): A dictionary containing the ensemble of models.
+        data (Any): The input data point.
+
+    Returns:
+        list: A list of meta-features extracted from the ensemble.
+    """
+
+    data = data.to(device)
+    outputs = []
+    for match, model in ensemble.items():
+        with torch.no_grad():
+            prob = torch.sigmoid(model(data)).cpu().numpy()
+            outputs.append(prob)
+    outputs = np.hstack(outputs)
+    return outputs

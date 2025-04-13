@@ -5,7 +5,7 @@ from torch_geometric.data import InMemoryDataset, Data
 
 from filepath import matrices_path, reliabilities_path, config_all_path, configs_list_path, dataset_path
 from datamanip.read_csvs import read_matrices, read_rel_values, merge_matrices_and_rel
-from datamanip.dataset_parts_construction import construct_edge_indices, construct_reliability_classes, \
+from datamanip.datasetmanip.dataset_parts_construction import construct_edge_indices, construct_reliability_classes, \
     construct_node_features
 
 

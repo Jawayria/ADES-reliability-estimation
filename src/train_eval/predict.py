@@ -1,10 +1,12 @@
 import torch
+import numpy as np
+from sklearn.ensemble import RandomForestClassifier
 from torch_geometric.data import Data
 
-from models.GAT import GAT
+from datamanip.datasetmanip.feature_extraction import get_meta_features_from_ensemble
 
 
-def predict_one_ensemble(ensemble: dict[str, GAT], data: Data, device = 'cpu') -> float:
+def predict_one_ensemble(ensemble: dict[str, torch.nn.Module], data: Data, device='cpu') -> float:
     """
     Predicts the winner of a match based on the ensemble of models.
 
@@ -63,3 +65,20 @@ def predict_one_ensemble(ensemble: dict[str, GAT], data: Data, device = 'cpu') -
                     return 6
                 else:
                     return 7
+
+
+def predict_one_meta_learner(ensemble: dict[str, torch.nn.Module], meta_learner: RandomForestClassifier, data: Data,
+                             device='cpu') -> float:
+    """
+    Predicts the winner of a match based on the meta-learner model.
+
+    Args:
+        meta_learner (RandomForestClassifier): The trained meta-learner model.
+        data (Data): A PyTorch Geometric Data object containing the input features.
+
+    Returns:
+        int: The predicted reliability class.
+    """
+    outputs = get_meta_features_from_ensemble(ensemble, data, device)
+    prediction = meta_learner.predict(outputs)[0]
+    return prediction

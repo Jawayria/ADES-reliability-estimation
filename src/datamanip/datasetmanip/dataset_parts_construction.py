@@ -4,9 +4,7 @@ import torch
 
 from decimal import Decimal, getcontext
 
-from jupyterlab.utils import deprecated
-
-from datamanip.feature_extraction import extract_features_from_data
+from datamanip.datasetmanip.feature_extraction import extract_features_from_data
 
 
 def convert_range_to_floats(nine_range: tuple[int, int, int]) -> tuple[float, float, float]:

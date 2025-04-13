@@ -100,6 +100,14 @@ def read_rel_values(filepath: str, path_to_config_all: str) -> pd.DataFrame:
     all_rels_df = pd.DataFrame(all_rels)
     return all_rels_df
 
+def read_one_reliability_file(path: str ) -> tuple[pd.DataFrame, int]:
+    rel_data = pd.read_csv(
+        path,
+        sep=';',
+        decimal=',',
+        names=['timestamp', 'reliability']
+    )
+    return rel_data, extract_config_id(path)
 
 def merge_matrices_and_rel(all_matrices_df: pd.DataFrame, all_rels_df: pd.DataFrame) -> pd.DataFrame:
     merged_df = pd.merge(all_matrices_df, all_rels_df, on="config_id", how="inner")

@@ -1,13 +1,10 @@
-import os
-
-import pandas as pd
 import torch
 from torch_geometric.data import InMemoryDataset, Data
 
 from datamanip.datasetmanip.dataset_util import split_dataset
 from filepath import matrices_path, reliabilities_path, config_all_path
 from datamanip.read_csvs import read_matrices, read_rel_values, merge_matrices_and_rel
-from datamanip.dataset_parts_construction import construct_edge_indices, construct_reliability_classes, \
+from datamanip.datasetmanip.dataset_parts_construction import construct_edge_indices, construct_reliability_classes, \
     construct_node_features, convert_range_to_floats, trim_df_by_range
 
 RANGES = [(0, 4, 8), (0, 2, 4), (4, 6, 8), (0, 1, 2), (2, 3, 4), (4, 5, 6), (6, 7, 8)]

@@ -7,7 +7,7 @@ from decimal import Decimal, getcontext
 
 
 
-from datamanip.feature_extraction import extract_features_from_data
+from datamanip.datasetmanip.feature_extraction import extract_features_from_data
 
 
 def construct_node_features(merged_df_exploded: pd.DataFrame, num_features: int = 5) -> torch.Tensor:

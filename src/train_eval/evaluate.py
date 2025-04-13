@@ -50,7 +50,7 @@ def evaluate_multiclass(device, model, test_loader, best_model_name):
     return true_values, predicted_values, squared_distance, accuracy, rmse, percentage_outside_rad_1, percentage_outside_rad_2
 
 
-def evaluate_ensamble(device, ensemble: dict[str, GAT], test_loader: DataLoader) -> tuple[
+def evaluate_ensemble(device, ensemble: dict[str, GAT], test_loader: DataLoader) -> tuple[
     np.ndarray, np.ndarray, int, float, float, float, float, float]:
     predictions = []
     true_classes = []

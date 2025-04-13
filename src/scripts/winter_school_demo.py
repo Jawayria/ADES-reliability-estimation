@@ -7,10 +7,10 @@ import pandas as pd
 import torch
 from torch_geometric.data import Data
 
-from datamanip.feature_extraction import extract_features_for_one_data_point
+from datamanip.datasetmanip.feature_extraction import extract_features_for_one_data_point
 from filepath import dataset_path
 from train_eval.predict import predict_one_ensemble
-from utils import load_best_model_based_on_match
+from train_eval.load_models import load_best_model_based_on_match
 
 
 def extract_config_id(path: str) -> int:

@@ -6,6 +6,7 @@ from torchmetrics.classification import (BinaryPrecision, BinaryRecall, BinaryF1
 import os
 import csv
 from pathlib import Path
+import numpy as np
 
 
 
@@ -33,10 +34,21 @@ def plot_rel_distribution(all_rels: list[int]):
 
 def generate_matrix(true_values, predicted_values, accuracy, model_name):
   cm = confusion_matrix(true_values, predicted_values)
-  disp = ConfusionMatrixDisplay(confusion_matrix=cm)  # Replace with your class labels if needed
-  disp.plot(cmap=plt.cm.Blues)
+  cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+  fig, ax = plt.subplots(figsize=(12, 12))
+
+  disp = ConfusionMatrixDisplay(confusion_matrix=cm, )
+
+  disp.plot(cmap="BuGn", values_format=".4f", ax=ax, colorbar=False)
 
   plt.title(f'Confusion Matrix for {model_name} - Accuracy: {accuracy:.2f}')
+
+  for i in range(cm.shape[0]):
+      for j in range(cm.shape[1]):
+          val = cm[i, j]
+          if val == 0.0:
+              disp.text_[i, j].set_text("")  # Clear the annotation
+
   plt.show()
 
 def generate_metrics(true_values, predicted_values, match, model_checkpoints_path, num_epochs, learning_rate, node_features, dropout_rate, patience, hidden_dim):
@@ -100,7 +112,7 @@ def visualize_samples_outside_of_radii(accuracy, outside_1, outside_2):
     percentages = [(1-accuracy)*100, outside_1*100, outside_2*100]
 
     # Create a bar chart
-    plt.figure(figsize=(8, 6))
+    plt.figure(figsize=(12, 10))
     bars = plt.bar(categories, percentages, color=['red', 'blue', 'green'])
 
     # Add text annotations on top of the bars

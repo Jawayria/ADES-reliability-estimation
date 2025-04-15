@@ -28,8 +28,11 @@ def load_best_model_based_on_match(match : str) -> torch.nn.Module:
     DROPOUT_RATE = float(first_row["Dropout rate"])
     # Initialize the GAT model with extracted parameters
     if match == "1-1" or match == "2-1" or   match == "2-2" or match == "3-2" or match == "3-3" or match == "3-4":
-        print(f"Using GAT_LN_HEAD for match {match}")
-        model = GAT_LN_HEAD(input_dim=NODE_FEATURES, hidden_dim=HIDDEN_DIM, output_dim=2, dropout_rate=DROPOUT_RATE)
+        heads = 4
+        if match == "3-2":
+            heads = 8
+        print(f"Using GAT_LN_HEAD for match {match}, using {heads} heads")
+        model = GAT_LN_HEAD(input_dim=NODE_FEATURES, hidden_dim=HIDDEN_DIM, output_dim=2, dropout_rate=DROPOUT_RATE, num_heads=heads)
         model.load_state_dict(torch.load(os.path.join(best_models_path, f"{match}.pth"), weights_only=True))
     else:
         print(f"Using GAT for match {match}")

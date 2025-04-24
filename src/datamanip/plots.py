@@ -2,12 +2,22 @@ import matplotlib.pyplot as plt
 from collections import Counter
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 import torch
-from torchmetrics.classification import (BinaryPrecision, BinaryRecall, BinaryF1Score, BinaryAccuracy, BinaryAUROC)
+from torchmetrics.classification import (
+    BinaryPrecision,
+    BinaryRecall,
+    BinaryF1Score,
+    BinaryAccuracy,
+    BinaryAUROC,
+    MulticlassAccuracy,
+    MulticlassF1Score,
+    MulticlassPrecision,
+    MulticlassRecall,
+    MulticlassAUROC,
+)
 import os
 import csv
 from pathlib import Path
 import numpy as np
-
 
 
 def plot_rel_distribution(all_rels: list[int]):
@@ -105,6 +115,58 @@ def generate_metrics(true_values, predicted_values, match, model_checkpoints_pat
         writer.writerow(data)
 
     print(f"Metrics saved to {file_path}")
+
+
+def generate_metrics_multiclass(true_values, predicted_values, match, model_checkpoints_path,
+                                 num_epochs, learning_rate, node_features, dropout_rate,
+                                 patience, hidden_dim, num_classes=8):
+
+    torch_true_values = torch.tensor(true_values)
+    torch_predicted_values = torch.tensor(predicted_values)
+
+    # Initialize multiclass metrics
+    precision = MulticlassPrecision(num_classes=num_classes, average="macro")
+    recall = MulticlassRecall(num_classes=num_classes, average="macro")
+    f1 = MulticlassF1Score(num_classes=num_classes, average="macro")
+    accuracy = MulticlassAccuracy(num_classes=num_classes, average="macro")
+
+    # Compute metrics
+    precision_val = precision(torch_predicted_values, torch_true_values)
+    recall_val = recall(torch_predicted_values, torch_true_values)
+    f1_val = f1(torch_predicted_values, torch_true_values)
+    accuracy_val = accuracy(torch_predicted_values, torch_true_values)
+
+    # Print results
+    print(f"Precision: {precision_val:.4f}")
+    print(f"Recall: {recall_val:.4f}")
+    print(f"F1 Score: {f1_val:.4f}")
+    print(f"Accuracy: {accuracy_val:.4f}")
+
+    data = {
+        "Match": match,
+        "Number of epochs": num_epochs,
+        "Learning rate": learning_rate,
+        "Node features": node_features,
+        "Dropout rate": dropout_rate,
+        "Patience": patience,
+        "Hidden dimension": hidden_dim,
+        "Precision": precision_val.item(),
+        "Recall": recall_val.item(),
+        "F1 Score": f1_val.item(),
+        "Accuracy": accuracy_val.item()
+    }
+
+    file_path = f"{model_checkpoints_path}/booster/results/{match}.csv"
+    write_header = not Path(file_path).exists()
+
+    with open(file_path, "a", newline="") as file:
+        writer = csv.DictWriter(file, fieldnames=data.keys())
+        if write_header:
+            writer.writeheader()
+        writer.writerow(data)
+
+    print(f"Metrics saved to {file_path}")
+
 
 def visualize_samples_outside_of_radii(accuracy, outside_1, outside_2):
     # Define categories and corresponding percentages

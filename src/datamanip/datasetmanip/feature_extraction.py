@@ -212,7 +212,13 @@ def get_meta_features_from_ensemble(ensemble: dict[str, Any], data: Data, device
     outputs = []
     for match, model in ensemble.items():
         with torch.no_grad():
-            prob = torch.sigmoid(model(data)).cpu().numpy()
-            outputs.append(prob)
+            if match == 'ensemble':
+                probs = torch.softmax(model(data), dim=1).cpu().numpy()
+            else:
+                probs = torch.sigmoid(model(data)).cpu().numpy()
+            outputs.append(probs)
+
     outputs = np.hstack(outputs)
+
     return outputs
+

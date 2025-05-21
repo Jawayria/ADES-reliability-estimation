@@ -115,10 +115,10 @@ def extract_features_from_data(merged_df_exploded: pd.DataFrame, dataset='3-5') 
 
         failure_rates = calculate_failure_rates(row['config_id'], dataset)
         type_count = calculate_type_count(row['config_id'], dataset)
-        switch_count = type_count['switch']
+    #    switch_count = type_count['switch']
         slave_count = type_count['slave']
         link_count = type_count['link']
-        i_count = type_count['i']
+    #    i_count = type_count['i']
 
         mean_failure_rate_neighbors = {
             node: np.mean([failure_rates.get(n, 0.0) for n in G.neighbors(node)])
@@ -133,10 +133,10 @@ def extract_features_from_data(merged_df_exploded: pd.DataFrame, dataset='3-5') 
                 closeness_centrality[node],
                 degree[node],
                 timestamp,
-                switch_count,
+            #    switch_count,
                 slave_count,
                 link_count,
-                i_count,
+            #    i_count,
                 failure_rates.get(node, 0.0),
                 betweenness_centrality[node],
                 # eigenvector_centrality[node],
@@ -165,10 +165,10 @@ def extract_features_for_one_data_point(adj_matrix: np.ndarray, timestamp: int, 
 
     failure_rates = calculate_failure_rates(config_id)
     type_count = calculate_type_count(config_id)
-    switch_count = type_count['switch']
+#    switch_count = type_count['switch']
     slave_count = type_count['slave']
     link_count = type_count['link']
-    i_count = type_count['i']
+#    i_count = type_count['i']
 
     mean_failure_rate_neighbors = {
         node: np.mean([failure_rates.get(n, 0.0) for n in G.neighbors(node)])
@@ -183,10 +183,10 @@ def extract_features_for_one_data_point(adj_matrix: np.ndarray, timestamp: int, 
             closeness_centrality[node],
             degree[node],
             timestamp,
-            switch_count,
+        #    switch_count,
             slave_count,
             link_count,
-            i_count,
+        #    i_count,
             failure_rates.get(node, 0.0),
             betweenness_centrality[node],
             k_core[node],

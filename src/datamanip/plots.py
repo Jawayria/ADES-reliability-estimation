@@ -43,23 +43,23 @@ def plot_rel_distribution(all_rels: list[int]):
     plt.show()
 
 def generate_matrix(true_values, predicted_values, accuracy, model_name):
-  cm = confusion_matrix(true_values, predicted_values)
-  cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
-  fig, ax = plt.subplots(figsize=(12, 12))
+    cm = confusion_matrix(true_values, predicted_values)
+    cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+    fig, ax = plt.subplots(figsize=(12, 12))
 
-  disp = ConfusionMatrixDisplay(confusion_matrix=cm, )
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm, )
 
-  disp.plot(cmap="BuGn", values_format=".4f", ax=ax, colorbar=False)
+    disp.plot(cmap="BuGn", values_format=".4f", ax=ax, colorbar=False)
 
-  plt.title(f'Confusion Matrix for {model_name} - Accuracy: {accuracy:.2f}')
+    plt.title(f'Confusion Matrix for {model_name} - Accuracy: {accuracy:.2f}')
 
-  for i in range(cm.shape[0]):
-      for j in range(cm.shape[1]):
-          val = cm[i, j]
-          if val == 0.0:
-              disp.text_[i, j].set_text("")  # Clear the annotation
+    for i in range(cm.shape[0]):
+        for j in range(cm.shape[1]):
+            val = cm[i, j]
+            if val == 0.0:
+                disp.text_[i, j].set_text("")  # Clear the annotation
 
-  plt.show()
+    plt.show()
 
 def generate_metrics(true_values, predicted_values, match, model_checkpoints_path, num_epochs, learning_rate, node_features, dropout_rate, patience, hidden_dim):
     torch_true_values = torch.tensor(true_values)

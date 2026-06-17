@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+from sklearn.metrics import cohen_kappa_score
 from torch_geometric.loader import DataLoader
 from torchmetrics.functional import f1_score
 
@@ -9,7 +10,7 @@ from models.GAT import GAT
 def evaluate(device, model, test_loader, best_model_name):
     print(model)
     # Load the saved state dictionary
-    model.load_state_dict(torch.load(best_model_name, weights_only=True))
+    #model.load_state_dict(torch.load(best_model_name, weights_only=True))
 
     # Evaluation code
     true_values = []
@@ -42,13 +43,45 @@ def evaluate(device, model, test_loader, best_model_name):
 
 
 def evaluate_multiclass(device, model, test_loader, best_model_name):
-    true_values, predicted_values, accuracy = evaluate(device, model, test_loader, best_model_name)
+    true_values, predicted_values, accuracy = evaluate(
+        device,
+        model,
+        test_loader,
+        best_model_name
+    )
+
     squared_distance = np.sum((true_values - predicted_values) ** 2)
     rmse = np.sqrt(squared_distance / len(true_values))
-    percentage_outside_rad_1 = np.sum(np.abs(true_values - predicted_values) > 1) / len(true_values)
-    percentage_outside_rad_2 = np.sum(np.abs(true_values - predicted_values) > 2) / len(true_values)
-    return true_values, predicted_values, squared_distance, accuracy, rmse, percentage_outside_rad_1, percentage_outside_rad_2
 
+    ordinal_mae = np.mean(np.abs(true_values - predicted_values))
+
+    qwk = cohen_kappa_score(
+        true_values,
+        predicted_values,
+        weights="quadratic"
+    )
+
+    percentage_outside_rad_1 = (
+        np.sum(np.abs(true_values - predicted_values) > 1)
+        / len(true_values)
+    )
+
+    percentage_outside_rad_2 = (
+        np.sum(np.abs(true_values - predicted_values) > 2)
+        / len(true_values)
+    )
+
+    return (
+        true_values,
+        predicted_values,
+        squared_distance,
+        accuracy,
+        rmse,
+        ordinal_mae,
+        qwk,
+        percentage_outside_rad_1,
+        percentage_outside_rad_2,
+    )
 
 def evaluate_ensemble(device, ensemble: dict[str, GAT], test_loader: DataLoader) -> tuple[
     np.ndarray, np.ndarray, int, float, float, float, float, float]:

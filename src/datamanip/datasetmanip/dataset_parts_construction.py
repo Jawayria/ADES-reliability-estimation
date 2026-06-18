@@ -60,69 +60,56 @@ def construct_edge_indices(df: pd.DataFrame) -> list[torch.Tensor]:
     return all_edge_indices
 
 
+def construct_reliability_classes(df, bins=None):
+    # --- FIT PHASE ---
+    if bins is None:
+        max_reliability = df.loc[df['reliability'] < 1, 'reliability'].max()
 
-def construct_binary_classes(df: pd.DataFrame, threshold : float) -> torch.Tensor:
-    all_rels_binary: list[int] = []
+        max_value_decimal = Decimal(str(max_reliability))
+        decimal_part = str(max_value_decimal).split('.')[1]
 
-    # Iterate through the filtered dataframe and assign binary class labels
-    for _, row in df.iterrows():
-        reliability = row['reliability']
-        if reliability >= threshold:
-            all_rels_binary.append(1)  # Assign class 1 if reliability is above or equal to the threshold
-        else:
-            all_rels_binary.append(0)  # Assign class 0 otherwise
+        count_nines = 0
+        for digit in decimal_part:
+            if digit == '9':
+                count_nines += 1
+            else:
+                break
 
-    # Convert the list of binary labels to a PyTorch tensor
-    all_rels_tensor_binary: torch.Tensor = torch.tensor(all_rels_binary)
-    return all_rels_tensor_binary
+        getcontext().prec = count_nines + 2
 
+        bins = []
+        current_bin_start = Decimal('0')
 
-def construct_ensemble_classes(df: pd.DataFrame) -> torch.Tensor:
-    # Find the biggest reliability value that is less than 1
-    max_reliability = df.loc[df['reliability'] < 1, 'reliability'].max()
+        for i in range(1, count_nines + 1):
+            current_bin_end = Decimal('1') - Decimal(f'1e-{i}')
+            bins.append((current_bin_start, current_bin_end))
+            current_bin_start = current_bin_end
 
-    # Take the part after the decimal point
-    max_value_decimal = Decimal(str(max_reliability))  # Ensure precise representation
-    decimal_part = str(max_value_decimal).split('.')[1]  # Get the decimal part
+        # explicit final bin
+        bins.append((current_bin_start, Decimal('1.0')))
 
-    # Count the number of nines in the decimal part
-    count_nines = 0
-    for digit in decimal_part:
-        if digit == '9':
-            count_nines += 1
-        else:
-            break  # Stop counting when encountering the first non-9 digit
+        return _apply_bins(df, bins), bins
 
-    getcontext().prec = count_nines + 2  # Set precision
-    # Create bins
-    bins = []
-    current_bin_start = Decimal('0')
-
-    for i in range(1, count_nines + 1):
-        current_bin_end = Decimal('1') - Decimal(f'1e-{i}')
-        bins.append((current_bin_start, current_bin_end))
-        current_bin_start = current_bin_end
-
-    # Define function to put values into bins
-    def classify_into_bins(value, bins_nines):
-        for idx, (bin_start, bin_end) in enumerate(bins_nines):
-            if bin_start <= value < bin_end:
-                return idx
-        return len(bins)
-
-    # Do the actual binning
-    all_rels: list[int] = []
-
-    for _, row in df.iterrows():
-        reliability = row['reliability']
-        bin_index = classify_into_bins(reliability, bins)
-        all_rels.append(bin_index)
-    return torch.tensor(all_rels)
-
-
-def construct_reliability_classes(merged_df_exploded: pd.DataFrame, threshold : float,
-                                  binary: bool = True) -> torch.Tensor:
-    if binary:
-        return construct_binary_classes(merged_df_exploded, threshold)
+    # --- TRANSFORM PHASE ---
     else:
-        return construct_ensemble_classes(merged_df_exploded)
+        return _apply_bins(df, bins)
+
+
+def _apply_bins(df, bins):
+    all_rels = []
+
+    for _, row in df.iterrows():
+        value = Decimal(str(row['reliability']))
+
+        assigned = False
+        for idx, (bin_start, bin_end) in enumerate(bins):
+            if bin_start <= value < bin_end:
+                all_rels.append(idx)
+                assigned = True
+                break
+
+        if not assigned:
+            # safety fallback (shouldn't happen if bins are correct)
+            all_rels.append(len(bins) - 1)
+
+    return torch.tensor(all_rels)

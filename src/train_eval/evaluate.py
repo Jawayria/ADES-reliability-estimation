@@ -71,6 +71,27 @@ def evaluate_multiclass(device, model, test_loader, best_model_name):
         / len(true_values)
     )
 
+    # Per-class metrics
+    per_class = {}
+
+    for cls in np.unique(true_values):
+        mask = true_values == cls
+
+        y_true = true_values[mask]
+        y_pred = predicted_values[mask]
+
+        per_class[cls] = {
+            "accuracy": np.mean(y_true == y_pred),
+            "ordinal_mae": np.mean(np.abs(y_true - y_pred)),
+            "qwk": cohen_kappa_score(
+                y_true,
+                y_pred,
+                weights="quadratic"
+            ),
+            "outside_1": np.mean(np.abs(y_true - y_pred) > 1),
+            "outside_2": np.mean(np.abs(y_true - y_pred) > 2),
+        }
+
     return (
         true_values,
         predicted_values,
@@ -81,6 +102,7 @@ def evaluate_multiclass(device, model, test_loader, best_model_name):
         qwk,
         percentage_outside_rad_1,
         percentage_outside_rad_2,
+        per_class,
     )
 
 def evaluate_ensemble(device, ensemble: dict[str, GAT], test_loader: DataLoader) -> tuple[

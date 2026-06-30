@@ -55,6 +55,8 @@ def generate_matrix(true_values, predicted_values, accuracy, model_name):
 
     for i in range(cm.shape[0]):
         for j in range(cm.shape[1]):
+            if disp.text_[i, j] is not None:
+                disp.text_[i, j].set_fontsize(16)
             val = cm[i, j]
             if val == 0.0:
                 disp.text_[i, j].set_text("")  # Clear the annotation
